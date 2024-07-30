@@ -6,14 +6,16 @@ import Icon from 'react-native-vector-icons/AntDesign';
 import { useNavigation } from '@react-navigation/native';
 
 const QuestionScreen = () => {
-    const navigation=useNavigation();
+  const navigation = useNavigation();
   const [selectedId, setSelectedId] = useState(null);
   const [score, setScore] = useState(0);
   const [index, setIndex] = useState(0);
   const [time, setTime] = useState(299); // Total time in seconds (10 minutes)
   const [submit, setSubmit] = useState(false);
-  const [optionArray, setOptionArray] = useState([]);
-  const [optionTextArray,setoptionTextArray]=useState([]);
+  const [optionArray, setOptionArray] = useState(new Array(Questions.length).fill(""));
+  const [optionTextArray, setOptionTextArray] = useState(new Array(Questions.length).fill("wrong"));
+  const [arr, setArr] = useState(new Array(Questions.length).fill(0));
+
   useEffect(() => {
     const interval = setInterval(() => {
       setTime((prevTime) => {
@@ -29,58 +31,41 @@ const QuestionScreen = () => {
     return () => clearInterval(interval);
   }, []);
 
-  function HandlePress(optionId, selectedOption) {
-    setSelectedId(optionId);
-    setOptionArray([...optionArray, optionId]);
+  const HandlePress = (optionId, selectedOption) => {
+    const newArr = [...arr];
+    newArr[index] = optionId;
+    setArr(newArr);
+
+    const newOptionArray = [...optionArray];
+    newOptionArray[index] = selectedOption;
+    setOptionArray(newOptionArray);
+
+    const newOptionTextArray = [...optionTextArray];
     if (selectedOption === Questions[index].answer) {
       setScore((prevScore) => prevScore + 1);
-      setoptionTextArray([...optionTextArray,"good"]);
+      newOptionTextArray[index] = "good";
+    } else {
+      newOptionTextArray[index] = "wrong";
     }
-    else
-    {
-      setoptionTextArray([...optionTextArray,"wrong"]);
-    }
-  }
+    setOptionTextArray(newOptionTextArray);
+  };
 
   const HandleSubmit = () => {
-    navigation.navigate('result',{
-        score:score,
-        optionArray:optionArray,
-        optionTextArray:optionTextArray
-    })
+    navigation.navigate('result', {
+      score: score,
+      arr: arr,
+      optionTextArray: optionTextArray,
+    });
     setSubmit(true);
   };
 
   const minute = Math.floor(time / 60);
   const second = time % 60;
 
-  const renderItems = ({ item }) => {
-    return (
-      <View key={item.id} style={styles.question_container}>
-        <View style={styles.question_header}>
-          <Text style={styles.question_number}>{item.id}.</Text>
-          <Text style={styles.question}>{item.question}</Text>
-        </View>
-        <View style={styles.all_option}>
-          {['option1', 'option2', 'option3', 'option4'].map((option, idx) => (
-            <View key={idx} style={styles.radio_btn}>
-              <Text style={styles.options}>{`${String.fromCharCode(97 + idx)}) ${item[option]}`}</Text>
-              <RadioButton
-                value={idx + 1}
-                status={optionArray[item.id - 1] === idx + 1 ? 'checked' : 'unchecked'}
-                color="grey"
-              />
-            </View>
-          ))}
-        </View>
-      </View>
-    );
-  };
-
   return (
     <SafeAreaView>
       <View style={styles.container}>
-        {submit === false ? (
+        {!submit ? (
           <View>
             <View style={styles.timer_view}>
               <Text style={styles.timer_text}>Remaining Time</Text>
@@ -105,7 +90,7 @@ const QuestionScreen = () => {
                     <Text style={styles.options}>{`${String.fromCharCode(97 + idx)}) ${Questions[index][option]}`}</Text>
                     <RadioButton
                       value={idx + 1}
-                      status={selectedId === idx + 1 ? 'checked' : 'unchecked'}
+                      status={arr[index] === idx + 1 ? 'checked' : 'unchecked'}
                       onPress={() => HandlePress(idx + 1, Questions[index][option])}
                       color="grey"
                     />
@@ -117,7 +102,7 @@ const QuestionScreen = () => {
             <View style={styles.buttonsGroup}>
               <TouchableOpacity
                 style={[styles.btns, { backgroundColor: index === 0 ? '#a3a39f' : 'black' }]}
-                onPress={() =>{ setIndex(index - 1)}}
+                onPress={() => setIndex((prevIndex) => Math.max(prevIndex - 1, 0))}
                 disabled={index === 0}
               >
                 <Icon name="doubleleft" color={'white'} marginTop={4} size={18} />
@@ -127,7 +112,7 @@ const QuestionScreen = () => {
               <TouchableOpacity
                 style={[styles.btns, { backgroundColor: index < Questions.length - 1 ? '#50C878' : '#a6f8c2' }]}
                 onPress={() => {
-                  setIndex(index + 1);
+                  setIndex((prevIndex) => Math.min(prevIndex + 1, Questions.length - 1));
                   setSelectedId(null);
                 }}
                 disabled={index >= Questions.length - 1}
@@ -150,7 +135,13 @@ const QuestionScreen = () => {
             <Text>{score}/{Questions.length}</Text>
             <FlatList
               data={Questions}
-              renderItem={renderItems}
+              renderItem={({ item, idx }) => (
+                <View key={item.id}>
+                  <Text>{item.id}. {item.question}</Text>
+                  <Text>Selected Answer: {optionArray[idx]}</Text>
+                  <Text>Status: {optionTextArray[idx]}</Text>
+                </View>
+              )}
               keyExtractor={(item) => item.id.toString()}
             />
           </View>
@@ -169,7 +160,7 @@ const styles = StyleSheet.create({
   question_container: {
     height: 270,
     padding: 10,
-    borderWidth:0.2,
+    borderWidth: 0.2,
     shadowColor: 'grey',
     shadowOffset: {
       width: 0,

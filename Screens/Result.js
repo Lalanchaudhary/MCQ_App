@@ -6,10 +6,20 @@ import Icon from 'react-native-vector-icons/AntDesign';
 import Icon2 from 'react-native-vector-icons/Entypo'
 const Result = ({route,navigation}) => {
     const [view,setView]=useState(false);
-    const {score,optionArray,optionTextArray}=route.params;
+    const [newArr,setNewArr]=useState(0)
+    const {score,arr,optionTextArray}=route.params;
+    useEffect(()=>{
+      optionTextArray.map((item)=>{
+        if(item==="good")
+        {
+          setNewArr((newArr)=>newArr+1)
+        }
+      })
+    })
   console.log('====================================');
   console.log(optionTextArray);
   console.log('====================================');
+
 
   const renderItems = ({ item }) => {
     return (
@@ -27,7 +37,7 @@ const Result = ({route,navigation}) => {
               <Text style={styles.options}>{`${String.fromCharCode(97 + idx)}) ${item[option]}`}</Text>
               <RadioButton
                 value={idx + 1}
-                status={optionArray[item.id - 1] === idx + 1 ? 'checked' : 'unchecked'}
+                status={arr[item.id - 1] === idx + 1 ? 'checked' : 'unchecked'}
                 color="grey"
               />
             </View>
@@ -45,7 +55,7 @@ const Result = ({route,navigation}) => {
             view===false?
         <View style={styles.question_container2}>
             <Text style={{fontSize:25,fontWeight:'bold',color:'black'}}>Test Submited Successfully</Text>
-            <Text style={{fontSize:20,color:'black',marginVertical: 20,}}>Total Score : {score}/{Questions.length}</Text>
+            <Text style={{fontSize:20,color:'black',marginVertical: 20,}}>Total Score : {newArr}/{Questions.length}</Text>
             <TouchableOpacity style={styles.btns} onPress={()=>setView(true)}>
                 <Text style={styles.btn_text}>View Result</Text>
             </TouchableOpacity>
